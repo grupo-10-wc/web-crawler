@@ -14,7 +14,7 @@ from pprint import pp
 
 def initialize_driver() -> webdriver.Chrome:
     options = webdriver.ChromeOptions()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     options.page_load_strategy = "eager"
     options.add_experimental_option("prefs", {
     "safebrowsing.enabled": True
@@ -24,10 +24,14 @@ def initialize_driver() -> webdriver.Chrome:
     return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     
     
-def surpress_wall(driver: webdriver.Chrome, url:str) -> None:
+def burlar_bloqueador(driver: webdriver.Chrome, url:str) -> None:
     driver.get(url)
     
-    return driver.find_element(By.CLASS_NAME, "protected-content").text
+    try:
+        text = driver.find_element(By.CLASS_NAME, "mc-article-body").text
+        return text
+    except:
+        print(f"article not found {url}")
     
 def get_page_links(qtd_paginas:int):
     links = []
@@ -44,15 +48,14 @@ def get_page_links(qtd_paginas:int):
 
 def get_page_content(url:str):
     driver = initialize_driver()
-    text = surpress_wall(driver, url)
-    pdb.set_trace()
-    pass
+    text = burlar_bloqueador(driver, url)
+    return text
 
 def main():
 
     links = get_page_links(10)
     for link in links:
-        get_page_content(link)
+        print(get_page_content(link))
     
     return None
 
