@@ -109,7 +109,7 @@ def main():
             bad_tokens.extend(bad)
             article_links.append(link)
 
-    write_to_csv(token_counts, good_tokens, bad_tokens)
+    write_to_csv(token_counts, good_tokens, bad_tokens, article_links)
 
     plot_wordcloud(good_tokens, bad_tokens)
 
