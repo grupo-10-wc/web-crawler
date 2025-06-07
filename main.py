@@ -1,20 +1,25 @@
 import pdb
+import boto3
+import os 
+import csv
+import pandas as pd
+import matplotlib.pyplot as plt
+import requests as req
+
+from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support import expected_conditions as EC
-import csv
-import pandas as pd
-import matplotlib.pyplot as plt
 from wordcloud import WordCloud
-
-import requests as req
 from pprint import pp
 from bs4 import BeautifulSoup as bs
 from pprint import pp
 from analisador_lexico import tokenize, classify_tokens
+
+
 
 def initialize_driver() -> webdriver.Chrome:
     options = webdriver.ChromeOptions()
@@ -90,6 +95,53 @@ def plot_wordcloud(good_tokens: list, bad_tokens: list):
 
     plt.tight_layout()
     plt.show()
+    
+def send_s3(local_filename: str, bucket_name: str, object_name: str):
+    
+    load_dotenv()
+    
+    sesssion = boto3.Session(
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+        aws_session_token=os.getenv('AWS_SESSION_TOKEN'),
+    )
+    
+    s3 = sesssion.client('s3')
+    
+    try:
+        s3.upload_file(local_filename, bucket_name, object_name)
+        print(f"Arquivo enviada para s3://{bucket_name}/{object_name}")
+    except Exception as e:
+        print(f"Erro ao enviar para o S3: {e}") 
+
+def save_wordcloud(
+    good_tokens: list,
+    bad_tokens: list,
+    local_filename: str
+):
+    good_words = ' '.join([token[0] for token in good_tokens])
+    bad_words = ' '.join([token[0] for token in bad_tokens])
+
+    good_wordcloud = WordCloud(width=800, height=400, background_color="white").generate(good_words)
+    bad_wordcloud = WordCloud(width=800, height=400, background_color="black", colormap="Reds").generate(bad_words)
+
+    plt.figure(figsize=(16, 8))
+    plt.subplot(1, 2, 1)
+    plt.imshow(good_wordcloud, interpolation="bilinear")
+    plt.axis("off")
+    plt.title("Palavras Positivas")
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(bad_wordcloud, interpolation="bilinear")
+    plt.axis("off")
+    plt.title("Palavras Negativas")
+
+    plt.tight_layout()
+
+    plt.savefig(local_filename, dpi=300)
+    plt.close()
+
+    print(f"Imagem salva localmente como {local_filename}")   
 
 def main():
     links = get_page_links(3)  # Assuming this function fetches the links
@@ -110,11 +162,18 @@ def main():
             article_links.append(link)
 
     write_to_csv(token_counts, good_tokens, bad_tokens, article_links)
-
-    plot_wordcloud(good_tokens, bad_tokens)
-
+    save_wordcloud(good_tokens, bad_tokens, 'wordcloud_imagem.png')
+    send_s3(
+        local_filename='wordcloud_imagem.png',
+        bucket_name='s3-trusted-bucket-wc-gabriel',
+        object_name='wordcloud_imagem.png'
+    )
+    send_s3(
+        local_filename='output.csv',
+        bucket_name='s3-trusted-bucket-wc-gabriel',
+        object_name='output.csv'
+    )
 
 
 if __name__ == "__main__":
     main()
-    
