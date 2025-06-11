@@ -44,12 +44,13 @@ def burlar_bloqueador(driver: webdriver.Chrome, url:str) -> None:
     
 def get_page_links(qtd_paginas:int):
     links = []
-    for i in range(1, qtd_paginas+1):
-        res = req.get("https://g1.globo.com/busca/", {"q":"energia", "page":i})
+    for i in range(qtd_paginas):
+        res = req.get("https://g1.globo.com/busca/", {"q":"conta+de+energia", "page":i+1})
         soup = bs(res.text)
         
         cards = soup.find_all(class_="widget widget--card widget--info")
-        cards = [card for card in cards if "video" not in str(card)]
+        cards = [card for card in cards if "globoplay" not in str(card)]
+        
         for card in cards:
             links.append(card.find("a")["href"].replace("//", "https://"))
     return links
@@ -81,14 +82,14 @@ def plot_wordcloud(good_tokens: list, bad_tokens: list):
     bad_wordcloud = WordCloud(width=800, height=400, background_color="black", colormap="Reds").generate(bad_words)
 
     # Plot good word cloud
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
+    plt.figure(figsize=(10, 10))
+    plt.subplot(10, 10, 1)
     plt.imshow(good_wordcloud, interpolation="bilinear")
     plt.axis("off")
     plt.title("Palavras Positivas")
 
     # Plot bad word cloud
-    plt.subplot(1, 2, 2)
+    plt.subplot(10, 10, 2)
     plt.imshow(bad_wordcloud, interpolation="bilinear")
     plt.axis("off")
     plt.title("Palavras Negativas")
@@ -143,36 +144,69 @@ def save_wordcloud(
 
     print(f"Imagem salva localmente como {local_filename}")   
 
+def save_text_to_cache(texts: list, filename: str = "cache.txt"):
+    with open(filename, 'w', encoding='utf-8') as file:
+        for text in texts:
+            if text:
+                file.write(text + "\n\n" + "="*50 + "\n\n")
+    print(f"Textos salvos em {filename}")
+
+def load_text_from_cache(filename: str = "cache.txt") -> str:
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            return file.read()
+    except FileNotFoundError:
+        return None
+
 def main():
-    links = get_page_links(3)  # Assuming this function fetches the links
-    article_links = []
-    good_tokens = []
-    bad_tokens = []
-    token_counts = {}
+    cache_filename = "cache.txt"
+    
+    cached_text = load_text_from_cache(cache_filename)
+    
+    if cached_text:
+        print("Usando txt cache")
+        tokens = tokenize(cached_text)
+        token_count, good, bad = classify_tokens(tokens, "cached_data")
+        good_tokens = good
+        bad_tokens = bad
+    else:
+        print("Realizando scrapping")
+        links = get_page_links(100)
+        article_links = []
+        good_tokens = []
+        bad_tokens = []
+        token_counts = {}
+        scraped_texts = []
 
-    for link in links:
-        print(f"Processando: {link}")
-        text = get_page_content(link)
-        if text:
-            tokens = tokenize(text)
-            token_count, good, bad = classify_tokens(tokens, link)
-            token_counts.update(token_count)
-            good_tokens.extend(good)
-            bad_tokens.extend(bad)
-            article_links.append(link)
+        for link in links:
+            print(f"Processando: {link}")
+            text = get_page_content(link)
+            if text:
+                scraped_texts.append(text)
+                tokens = tokenize(text)
+                token_count, good, bad = classify_tokens(tokens, link)
+                token_counts.update(token_count)
+                good_tokens.extend(good)
+                bad_tokens.extend(bad)
+                article_links.append(link)
 
-    write_to_csv(token_counts, good_tokens, bad_tokens, article_links)
+        save_text_to_cache(scraped_texts, cache_filename)
+        
+        write_to_csv(token_counts, good_tokens, bad_tokens, article_links)
+
     save_wordcloud(good_tokens, bad_tokens, 'wordcloud_imagem.png')
     send_s3(
         local_filename='wordcloud_imagem.png',
         bucket_name='s3-trusted-bucket-wc-gabriel',
         object_name='wordcloud_imagem.png'
     )
-    send_s3(
-        local_filename='output.csv',
-        bucket_name='s3-trusted-bucket-wc-gabriel',
-        object_name='output.csv'
-    )
+    
+    if not cached_text:  # Only upload CSV if we scraped new data
+        send_s3(
+            local_filename='output.csv',
+            bucket_name='s3-trusted-bucket-wc-gabriel',
+            object_name='output.csv'
+        )
 
 
 if __name__ == "__main__":

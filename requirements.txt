@@ -6,3 +6,4 @@ python-Levenshtein
 wordcloud 
 matplotlib
 pandas
+boto3

@@ -5,13 +5,29 @@ GOOD_KEYWORDS = {
     "redução", "beneficio", "economia", "energia renovável", "sustentabilidade",
     "eficiência energética", "tecnologia limpa", "inovação", "descarbonização",
     "soluções verdes", "investimento", "crescimento", "desenvolvimento", "oportunidade", "progresso",
-    "incentivo", "conscientização", "eficiência"
+    "incentivo", "conscientização", "eficiência", "desconto", "tarifa social",
+    "bandeira verde", "energia solar", "energia eólica", "hidrelétrica", "economia de energia",
+    "otimização", "modernização", "smart grid", "medidor inteligente", "automação",
+    "sustentável", "ecológico", "limpo", "renovável", "verde", "eficiente",
+    "poupança", "redução de custos", "menor consumo", "baixo custo", "gratuito",
+    "subvenção", "subsídio", "financiamento", "crédito", "facilidade", "melhoria",
+    "upgrade", "atualização", "tecnologia avançada", "solução", "benefício tarifário"
 }
 
 
 BAD_KEYWORDS = {
-    "incendio", "fogo", "calor", "quente", "perigo", "eletricidade",
-    "crise", "curto", "morte", "acidente", "furto", "gato", "aumento"
+    "aumento", "elevação", "alta", "subida", "majoração", "reajuste",
+    "desperdício", "gasto excessivo", "consumo alto",
+    "sobrecarga", "pico de consumo", "vermelha",
+    "multa", "penalidade", "taxa adicional", "cobrança extra",
+    "energia suja", "poluição", "emissão", "carbono", "combustível fóssil",
+    "desperdício energético", "perda", "vazamento", "má utilização",
+    "obsoleto", "ultrapassado", "ineficiente", "antigo", "defasado",
+    "custoso", "oneroso", "dispendioso", "alto custo",
+    "fatura elevada", "débito", "inadimplência",
+    "corte", "suspensão", "interrupção", "desligamento",
+    "problema", "falha", "defeito", "avaria", "mau funcionamento",
+    "despesas", "gastos", "custos elevados", "preço alto", "manunteção", ""
 }
 
 ALL_KEYWORDS = GOOD_KEYWORDS.union(BAD_KEYWORDS)
